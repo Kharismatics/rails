@@ -5,6 +5,22 @@
     sort-by="due_date"
     class="elevation-1"
   >
+    <template v-slot:item.iscomplete="{ item }">
+      <v-chip
+        :color="getColoriscomplete(item.iscomplete)"
+        dark
+        class="black--text"
+      >
+        {{ item.iscomplete > 0 ? "Completed" : "On Progress" }}
+      </v-chip>
+    </template>
+    <template v-slot:item.priority="{ item }">
+      <v-chip :color="getColorpriority(item.priority)" dark class="black--text">
+        {{
+          item.priority == 1 ? "Low" : item.priority == 2 ? "Medium" : "High"
+        }}
+      </v-chip>
+    </template>
     <template v-slot:top>
       <v-toolbar flat>
         <v-toolbar-title>My Task</v-toolbar-title>
@@ -24,17 +40,13 @@
             <v-card-text>
               <v-container>
                 <v-row>
-                  <v-col cols="12" sm="6" md="4">
+                  <v-col cols="12" sm="12" md="12">
                     <v-text-field
                       v-model="editedItem.name"
                       label="Task name"
                     ></v-text-field>
                   </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <!-- <v-text-field
-                      v-model="editedItem.due_date"
-                      label="Due Date"
-                    ></v-text-field> -->
+                  <v-col cols="6" sm="6" md="6">
                     <v-menu
                       ref="menu"
                       v-model="menu"
@@ -54,7 +66,11 @@
                           v-on="on"
                         ></v-text-field>
                       </template>
-                      <v-date-picker v-model="editedItem.due_date" no-title scrollable>
+                      <v-date-picker
+                        v-model="editedItem.due_date"
+                        no-title
+                        scrollable
+                      >
                         <v-spacer></v-spacer>
                         <v-btn text color="primary" @click="menu = false">
                           Cancel
@@ -69,23 +85,32 @@
                       </v-date-picker>
                     </v-menu>
                   </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field
+                  <v-col cols="6" sm="6" md="6">
+                    <v-select
                       v-model="editedItem.priority"
+                      :items="items"
+                      item-text="state"
+                      item-value="abbr"
                       label="Priority"
-                    ></v-text-field>
+                    ></v-select>
                   </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field
-                      v-model="editedItem.iscomplete"
-                      label="Status"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6" md="4">
+                  <v-col cols="12" sm="12" md="12">
                     <v-text-field
                       v-model="editedItem.description"
                       label="Description"
                     ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" sm="12" md="12">
+                    <v-checkbox
+                      false-value="0"
+                      true-value="1"
+                      v-model="editedItem.iscomplete"
+                      :label="`Status (click to change) ${
+                        editedItem.iscomplete.toString() == 1
+                          ? 'Complete'
+                          : 'On Progress'
+                      }`"
+                    ></v-checkbox>
                   </v-col>
                 </v-row>
               </v-container>
@@ -132,7 +157,12 @@
 import axios from "axios";
 export default {
   data: () => ({
-    // date: new Date().toISOString().substr(0, 10),
+    items: [
+      { state: "Low", abbr: 1 },
+      { state: "Medium", abbr: 2 },
+      { state: "High", abbr: 3 },
+    ],
+    checkbox: 0,
     menu: false,
     dialog: false,
     dialogDelete: false,
@@ -155,14 +185,14 @@ export default {
       name: "",
       description: "",
       due_date: new Date().toISOString().substr(0, 10),
-      priority: 0,
+      priority: 1,
       iscomplete: 0,
     },
     defaultItem: {
       name: "",
       description: "",
       due_date: new Date().toISOString().substr(0, 10),
-      priority: 0,
+      priority: 1,
       iscomplete: 0,
     },
   }),
@@ -192,15 +222,25 @@ export default {
     //     {
     //       name: 'Task 1',
     //       description: 'just Task 1',
-    //       due_date: '2021-01-01',
+    //       due_date: new Date().toISOString().substr(0, 10),
     //       priority: 3,
     //       iscomplete: 0,
     //     },
     //   ]
     // },
+    getColoriscomplete(param) {
+      if (param > 0) return "green";
+      else return "orange";
+    },
+    getColorpriority(param) {
+      if (param == 3) return "red";
+      else if (param == 2) return "yellow";
+      else return "grey";
+    },
+
     initialize() {
       return axios
-        .get(document_root+"tasks")
+        .get(document_root + "tasks")
         .then((response) => {
           console.log(response.data);
           this.desserts = response.data;
@@ -211,7 +251,7 @@ export default {
     },
     getItem(item) {
       axios
-        .get(document_root+`${item.id}`)
+        .get(document_root + `tasks/${item.id}`)
         .then((response) => {
           this.dessert = response.data;
         })
@@ -230,7 +270,7 @@ export default {
       const index = this.desserts.indexOf(item);
       confirm("Are you sure you want to delete this item?");
       axios
-        .delete(document_root+`tasks/${item.id}`)
+        .delete(document_root + `tasks/${item.id}`)
         .then((response) => {
           console.log(response);
           console.log(response.data.json);
@@ -267,7 +307,7 @@ export default {
     save(item) {
       if (this.editedIndex > -1) {
         axios
-          .put(document_root+`tasks/` + this.editedItem.id, {
+          .put(document_root + `tasks/` + this.editedItem.id, {
             id: this.editedItem.id,
             name: this.editedItem.name,
             description: this.editedItem.description,
@@ -283,9 +323,8 @@ export default {
             console.log(error);
           });
       } else {
-        console.log("aaaaaaaaaaaddddddd");
         axios
-          .post(document_root+`tasks/`, {
+          .post(document_root + `tasks/`, {
             task: this.editedItem,
           })
           .then((response) => {
