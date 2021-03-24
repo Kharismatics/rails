@@ -39,7 +39,7 @@
                       ref="menu"
                       v-model="menu"
                       :close-on-content-click="false"
-                      :return-value.sync="date"
+                      :return-value.sync="editedItem.due_date"
                       transition="scale-transition"
                       offset-y
                       min-width="auto"
@@ -200,7 +200,7 @@ export default {
     // },
     initialize() {
       return axios
-        .get("http://localhost:3000/tasks")
+        .get(document_root+"tasks")
         .then((response) => {
           console.log(response.data);
           this.desserts = response.data;
@@ -211,7 +211,7 @@ export default {
     },
     getItem(item) {
       axios
-        .get(`https://localhost:3000/${item.id}`)
+        .get(document_root+`${item.id}`)
         .then((response) => {
           this.dessert = response.data;
         })
@@ -230,7 +230,7 @@ export default {
       const index = this.desserts.indexOf(item);
       confirm("Are you sure you want to delete this item?");
       axios
-        .delete(`http://localhost:3000/tasks/${item.id}`)
+        .delete(document_root+`tasks/${item.id}`)
         .then((response) => {
           console.log(response);
           console.log(response.data.json);
@@ -267,7 +267,7 @@ export default {
     save(item) {
       if (this.editedIndex > -1) {
         axios
-          .put(`http://localhost:3000/tasks/` + this.editedItem.id, {
+          .put(document_root+`tasks/` + this.editedItem.id, {
             id: this.editedItem.id,
             name: this.editedItem.name,
             description: this.editedItem.description,
@@ -285,7 +285,7 @@ export default {
       } else {
         console.log("aaaaaaaaaaaddddddd");
         axios
-          .post(`http://localhost:3000/tasks/`, {
+          .post(document_root+`tasks/`, {
             task: this.editedItem,
           })
           .then((response) => {

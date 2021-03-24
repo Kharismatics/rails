@@ -12,6 +12,10 @@
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
     <%= javascript_pack_tag 'main' %>
+    <script>
+      var document_root = '<%= root_url  %>';
+      console.log('document_root '+ document_root);
+    </script>
   </head>
 
   <body>
