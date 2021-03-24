@@ -11,7 +11,9 @@
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
-    <%= javascript_pack_tag 'main' %>
+    <% if user_signed_in? %>
+      <%= javascript_pack_tag 'main' %>
+    <% end %>
     <script>
       var document_root = '<%= root_url  %>';
       console.log('document_root '+ document_root);
