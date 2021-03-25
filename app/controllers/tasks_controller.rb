@@ -31,6 +31,10 @@ class TasksController < ApplicationController
         render json: { json: @task.errors, status: :unprocessable_entity }
         end
     end
+    def messages
+        @tasks = Task.where(due_date: Time.now.midnight).where(iscomplete: false)
+        render json: @tasks 
+    end
     private
     def task_params
         params.require(:task).permit(:id, :name, :description, :due_date, :priority, :iscomplete)

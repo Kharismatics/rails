@@ -1,10 +1,51 @@
 <template>
   <v-data-table
+    :loading="loading"
+    loading-text="Loading... Please wait"
     :headers="headers"
     :items="desserts"
-    sort-by="due_date"
+    :sort-by="['iscomplete', 'due_date']"
     class="elevation-1"
+    group-by="iscomplete"
+    show-group-by
   >
+    <template
+      v-slot:group.header="{
+        items,
+        group,
+        groupBy,
+        headers,
+        toggle,
+        isOpen,
+        remove,
+      }"
+    >
+      <td :colspan="headers.length">
+        <v-btn @click="toggle" x-small icon :ref="group">
+          <v-icon v-if="isOpen">mdi-plus</v-icon>
+          <v-icon v-else>mdi-minus</v-icon>
+        </v-btn>
+        <span v-if="groupBy[0] === 'priority'" class="mx-5 font-weight-bold"
+          >{{ group == 1 ? "Low" : group == 2 ? "Medium" : "High" }}
+        </span>
+        <span
+          v-else-if="groupBy[0] === 'iscomplete'"
+          class="mx-5 font-weight-bold"
+          >{{ group == 1 ? "Complete" : "On Progress" }}
+        </span>
+        <span
+          v-else-if="groupBy[0] === 'due_date'"
+          class="mx-5 font-weight-bold"
+          >{{
+            group == new Date().toISOString().substr(0, 10) ? "To day" : group
+          }}
+        </span>
+        <span v-else class="mx-5 font-weight-bold"> {{ group }} </span>
+        <v-btn icon @click="remove">
+          <v-icon> mdi-close</v-icon>
+        </v-btn>
+      </td>
+    </template>
     <template v-slot:item.iscomplete="{ item }">
       <v-chip
         :color="getColoriscomplete(item.iscomplete)"
@@ -29,7 +70,7 @@
         <v-dialog v-model="dialog" max-width="500px">
           <template v-slot:activator="{ on, attrs }">
             <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on">
-              New Item
+              New Task
             </v-btn>
           </template>
           <v-card>
@@ -102,10 +143,10 @@
                   </v-col>
                   <v-col cols="12" sm="12" md="12">
                     <v-checkbox
-                      false-value="0"
-                      true-value="1"
+                      v-bind:false-value="0"
+                      v-bind:true-value="1"
                       v-model="editedItem.iscomplete"
-                      :label="`Status (click to change) ${
+                      :label="`(Check it to Complete) ${
                         editedItem.iscomplete.toString() == 1
                           ? 'Complete'
                           : 'On Progress'
@@ -143,13 +184,11 @@
       </v-toolbar>
     </template>
     <template v-slot:item.actions="{ item }">
-      <v-btn color="warning" small class="mr-2" @click="editItem(item)">
-        edit
-      </v-btn>
-      <v-btn color="red" small @click="deleteItem(item)"> delete </v-btn>
+      <v-icon small class="mr-2" @click="editItem(item)"> mdi-pencil </v-icon>
+      <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
     </template>
     <template v-slot:no-data>
-      <v-btn color="primary" @click="initialize"> Reset </v-btn>
+      No Data
     </template>
   </v-data-table>
 </template>
@@ -157,27 +196,28 @@
 import axios from "axios";
 export default {
   data: () => ({
+    loading: true,
+    menu: false,
+    dialog: false,
+    dialogDelete: false,
     items: [
       { state: "Low", abbr: 1 },
       { state: "Medium", abbr: 2 },
       { state: "High", abbr: 3 },
     ],
-    checkbox: 0,
-    menu: false,
-    dialog: false,
-    dialogDelete: false,
     headers: [
       {
         text: "Task Name",
         align: "start",
         sortable: false,
         value: "name",
+        groupable: false,
       },
       { text: "Description", value: "description" },
       { text: "Due Date", value: "due_date" },
       { text: "Priority", value: "priority" },
       { text: "Status", value: "iscomplete" },
-      { text: "Actions", value: "actions", sortable: false },
+      { text: "Actions", value: "actions", sortable: false, groupable: false },
     ],
     desserts: [],
     editedIndex: -1,
@@ -217,17 +257,6 @@ export default {
   },
 
   methods: {
-    // initialize () {
-    //   this.desserts = [
-    //     {
-    //       name: 'Task 1',
-    //       description: 'just Task 1',
-    //       due_date: new Date().toISOString().substr(0, 10),
-    //       priority: 3,
-    //       iscomplete: 0,
-    //     },
-    //   ]
-    // },
     getColoriscomplete(param) {
       if (param > 0) return "green";
       else return "orange";
@@ -244,19 +273,11 @@ export default {
         .then((response) => {
           console.log(response.data);
           this.desserts = response.data;
+          this.loading = false
         })
         .catch((e) => {
           console.log(e);
-        });
-    },
-    getItem(item) {
-      axios
-        .get(document_root + `tasks/${item.id}`)
-        .then((response) => {
-          this.dessert = response.data;
-        })
-        .catch((error) => {
-          console.log(error);
+          this.loading = false
         });
     },
 
@@ -267,6 +288,7 @@ export default {
     },
 
     deleteItem(item) {
+      this.loading = true
       const index = this.desserts.indexOf(item);
       confirm("Are you sure you want to delete this item?");
       axios
@@ -305,6 +327,7 @@ export default {
     },
 
     save(item) {
+      this.loading = true
       if (this.editedIndex > -1) {
         axios
           .put(document_root + `tasks/` + this.editedItem.id, {
